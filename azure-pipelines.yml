@@ -4,61 +4,41 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
 trigger:
-- master
+- feature-stage
+
+pool:
+  vmImage: 'Ubuntu-16.04'
 
 variables:
-  buildConfiguration: 'Release'
+  buildConfiguration: Release
 
-stages:
-- stage: building-stage
-  displayName: Building Stage for Web App
-  jobs:
-  - job:
-    pool:
-      vmImage: 'Ubuntu-16.04'
-    displayName: Restore NuGet Packages
-    steps:
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: restore
-        projects: '**/*.csproj'
-  - job:
-    displayName: Build Code
-    pool:
-      vmImage: 'Ubuntu-16.04'
-    steps:
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: build
-        projects: '**/*.csproj'
-        arguments: '--configuration $(buildConfiguration)'
-  - job:
-    displayName: Test Code
-    pool:
-      vmImage: 'Ubuntu-16.04'
-    steps:
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: test
-        projects: '**/*Tests/*.csproj'
-        arguments: '--configuration $(buildConfiguration)'
-  - job:
-    displayName: 'Publish Code'
-    pool:
-      vmImage: 'Ubuntu-16.04'
-    steps:
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: publish
-        publishWebProjects: true
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
-        zipAfterPublish: true
-  - job:
-    displayName: Publish build artifact
-    pool:
-      vmImage: 'Ubuntu-16.04'
-    steps:
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: code-drop
+steps:
+- task: DotNetCoreCLI@2
+  displayName: 'Restore dependencies'
+  inputs:
+    command: restore
+    projects: '**/*.csproj'
+- task: DotNetCoreCLI@2
+  displayName: 'Build Code for WebApp'
+  inputs:
+    command: build
+    projects: '**/*.csproj'
+    arguments: '--configuration $(buildConfiguration)'
+- task: DotNetCoreCLI@2
+  displayName: 'Testing the code - Unit Tests'
+  inputs:
+    command: test
+    projects: '**/*Tests/*.csproj'
+    arguments: '--configuration $(buildConfiguration)'
+- task: DotNetCoreCLI@2
+  displayName: 'Publish code for Web App'
+  inputs:
+    command: publish
+    publishWebProjects: True
+    arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+    zipAfterPublish: true
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish build artifacts for the WebApp deployment'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'code-drop_v1'
